@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Demo · Mobile Preview</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #fafafa;
+        --ink: #18181b;
+        --muted: #71717a;
+        --line: #e4e4e7;
+        --card: #ffffff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+      }
+
+      main {
+        padding: 28px 20px 40px;
+      }
+
+      .eyebrow {
+        margin: 0 0 8px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      h1 {
+        margin: 0 0 10px;
+        font-size: 28px;
+        line-height: 1.15;
+        letter-spacing: -0.03em;
+      }
+
+      p {
+        margin: 0;
+        font-size: 15px;
+        line-height: 1.5;
+        color: var(--muted);
+      }
+
+      .hero {
+        margin-bottom: 28px;
+      }
+
+      .stack {
+        display: grid;
+        gap: 12px;
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 16px;
+      }
+
+      .card strong {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 14px;
+      }
+
+      .card span {
+        font-size: 13px;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <p class="eyebrow">Preview</p>
+        <h1>Your mobile site, framed.</h1>
+        <p>
+          This demo page loads inside the simulator by default. Point the URL
+          bar at your local app (for example
+          <code>http://localhost:3000</code>) when it is running.
+        </p>
+      </section>
+
+      <section class="stack">
+        <article class="card">
+          <strong>Responsive layout</strong>
+          <span>Check spacing, type, and tap targets at phone width.</span>
+        </article>
+        <article class="card">
+          <strong>Scroll & overflow</strong>
+          <span>Verify sticky headers and bottom bars inside a real viewport.</span>
+        </article>
+        <article class="card">
+          <strong>Local development</strong>
+          <span>Keep this tab open while you iterate on your app server.</span>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>
