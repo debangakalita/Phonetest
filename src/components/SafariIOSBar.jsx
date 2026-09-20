@@ -2,8 +2,12 @@ import { BookOpen, ChevronLeft, ChevronRight, Share } from 'lucide-react'
 import { displayUrl } from '../lib/url'
 
 function domainOnly(url) {
+  if (typeof url === 'string' && (url.startsWith('blob:') || !url.includes('://'))) {
+    return displayUrl(url)
+  }
   try {
     const parsed = new URL(url, window.location.origin)
+    if (!parsed.hostname) return displayUrl(url)
     return parsed.hostname.replace(/^www\./, '')
   } catch {
     return displayUrl(url)

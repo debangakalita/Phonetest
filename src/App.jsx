@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   AndroidSystemUI,
   ChromeAndroidBottom,
@@ -13,6 +13,11 @@ import {
   Viewport,
 } from './components'
 import { devices, getDeviceById } from './data/devices'
+import {
+  isFileUrl,
+  openLocalSiteFromDirectory,
+  openLocalSiteFromFileList,
+} from './lib/localSite'
 import {
   DEFAULT_URL,
   canReachUrl,
@@ -38,12 +43,24 @@ export default function App() {
   const [browser, setBrowser] = useState(
     defaultBrowserForOs(devices[0].os),
   )
+  const localSiteRef = useRef(null)
 
   const selectedDevice = getDeviceById(selectedDeviceId)
   const isAndroid = selectedDevice.os === 'android'
   const isIos = selectedDevice.os === 'ios'
   const showChromeIos = browser === 'chrome' && isIos
   const showSafariBar = browser === 'safari' && isIos
+
+  useEffect(() => {
+    return () => {
+      localSiteRef.current?.revoke()
+    }
+  }, [])
+
+  function clearLocalSite() {
+    localSiteRef.current?.revoke()
+    localSiteRef.current = null
+  }
 
   function handleDeviceChange(deviceId) {
     const nextDevice = getDeviceById(deviceId)
@@ -53,32 +70,70 @@ export default function App() {
     }
   }
 
+  async function loadLocalSite(loader) {
+    try {
+      const site = await loader()
+      clearLocalSite()
+      localSiteRef.current = site
+      setInputUrl(site.displayName)
+      setActiveUrl(site.blobUrl)
+      setBlockedReason(null)
+      setReloadKey((key) => key + 1)
+    } catch (error) {
+      if (error?.name === 'AbortError') return
+      if (error?.message === 'UNSUPPORTED') {
+        setBlockedReason(
+          'This browser cannot open folders directly. Use Chrome/Edge, or serve the site with a local HTTP server.',
+        )
+        return
+      }
+      setBlockedReason(
+        error?.message || 'Could not open the local HTML folder.',
+      )
+    }
+  }
+
   async function navigateTo(rawUrl) {
     const nextUrl = normalizeUrl(rawUrl)
 
-    if (isSimulatorShellUrl(nextUrl)) {
+    if (isFileUrl(nextUrl) || isFileUrl(rawUrl)) {
       setActiveUrl(nextUrl)
       setBlockedReason(
-        'That URL is this simulator. Open /demo.html or your app URL (e.g. http://localhost:3000) instead.',
+        'Browsers block file:// pages inside this simulator. Click “Open local” and choose the HTML folder instead.',
+      )
+      return
+    }
+
+    if (isSimulatorShellUrl(nextUrl)) {
+      clearLocalSite()
+      setActiveUrl(nextUrl)
+      setBlockedReason(
+        'That URL is this simulator. Open a local folder or your app URL (e.g. http://localhost:3001) instead.',
       )
       return
     }
 
     const reachable = await canReachUrl(nextUrl)
     if (!reachable) {
+      clearLocalSite()
       setActiveUrl(nextUrl)
       setBlockedReason(
-        `Nothing is responding at ${nextUrl}. Start your local server, then press Go again.`,
+        `Nothing is responding at ${nextUrl}. Start your local server, or use “Open local” for HTML folders.`,
       )
       return
     }
 
+    clearLocalSite()
     setBlockedReason(null)
     setActiveUrl(nextUrl)
     setReloadKey((key) => key + 1)
   }
 
   function handleReload() {
+    if (localSiteRef.current) {
+      setReloadKey((key) => key + 1)
+      return
+    }
     if (blockedReason) {
       void navigateTo(activeUrl)
       return
@@ -90,6 +145,8 @@ export default function App() {
     event.preventDefault()
     void navigateTo(inputUrl)
   }
+
+  const addressUrl = activeUrl.startsWith('blob:') ? inputUrl : activeUrl
 
   const viewport = (
     <Viewport
@@ -104,7 +161,7 @@ export default function App() {
   if (isAndroid) {
     screenContent = (
       <AndroidSystemUI device={selectedDevice}>
-        <ChromeAndroidTop url={activeUrl} />
+        <ChromeAndroidTop url={addressUrl} />
         {viewport}
         <ChromeAndroidBottom />
       </AndroidSystemUI>
@@ -113,7 +170,7 @@ export default function App() {
     screenContent = (
       <>
         <StatusBar />
-        <ChromeIOSTopBar url={activeUrl} />
+        <ChromeIOSTopBar url={addressUrl} />
         {viewport}
         <ChromeIOSBottomBar />
         <HomeIndicator />
@@ -125,7 +182,7 @@ export default function App() {
         <StatusBar />
         {viewport}
         {showSafariBar ? (
-          <SafariIOSBar url={activeUrl} onReload={handleReload} />
+          <SafariIOSBar url={addressUrl} onReload={handleReload} />
         ) : (
           <HomeIndicator />
         )}
@@ -144,6 +201,10 @@ export default function App() {
         browser={browser}
         onBrowserChange={setBrowser}
         showBrowserToggle={isIos}
+        onOpenLocalFolder={() => loadLocalSite(openLocalSiteFromDirectory)}
+        onOpenLocalFallback={(fileList) =>
+          loadLocalSite(() => openLocalSiteFromFileList(fileList))
+        }
       />
       <main className="flex min-h-0 flex-1 items-center justify-center overflow-hidden px-6 py-6">
         <DeviceFrame device={selectedDevice}>{screenContent}</DeviceFrame>

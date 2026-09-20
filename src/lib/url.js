@@ -25,8 +25,19 @@ export function resolveUrl(value, base = window.location.href) {
 }
 
 export function displayUrl(value) {
+  if (typeof value === 'string' && value.startsWith('blob:')) {
+    return 'local file'
+  }
+
+  if (typeof value === 'string' && !value.includes('://') && value.includes('/')) {
+    // local folder display label, e.g. lego/index.html
+    return value
+  }
+
   const url = resolveUrl(value)
   if (!url) return value
+
+  if (url.protocol === 'blob:') return 'local file'
 
   const host =
     url.port && url.port !== '80' && url.port !== '443'
@@ -58,6 +69,10 @@ export function isSimulatorShellUrl(value) {
 export async function canReachUrl(value) {
   const url = resolveUrl(value)
   if (!url) return false
+
+  if (url.protocol === 'file:' || url.protocol === 'blob:') {
+    return url.protocol === 'blob:'
+  }
 
   // Same-origin static assets (demo page) are always fine.
   if (url.origin === window.location.origin) return true
