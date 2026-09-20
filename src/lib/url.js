@@ -1,10 +1,15 @@
-const DEFAULT_URL = '/demo.html'
+const BASE_URL = import.meta.env.BASE_URL || '/'
+const DEFAULT_URL = `${BASE_URL}demo.html`.replace(/\/{2,}/g, '/')
 
 export function normalizeUrl(value) {
   const trimmed = value.trim()
   if (!trimmed) return DEFAULT_URL
 
-  if (trimmed.startsWith('/')) return trimmed
+  if (trimmed.startsWith('/')) {
+    // Keep app-relative paths under the Vite base (GitHub Pages project URL).
+    if (trimmed.startsWith(BASE_URL) || BASE_URL === '/') return trimmed
+    return `${BASE_URL}${trimmed.replace(/^\//, '')}`.replace(/\/{2,}/g, '/')
+  }
 
   if (/^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(trimmed)) return trimmed
 
@@ -39,8 +44,15 @@ export function isSimulatorShellUrl(value) {
   const here = new URL(window.location.href)
   if (url.origin !== here.origin) return false
 
+  const basePath = BASE_URL.replace(/\/+$/, '') || ''
   const path = url.pathname.replace(/\/+$/, '') || '/'
-  return path === '/' || path === '/index.html'
+
+  return (
+    path === '/' ||
+    path === '/index.html' ||
+    path === basePath ||
+    path === `${basePath}/index.html`
+  )
 }
 
 export async function canReachUrl(value) {
@@ -66,4 +78,4 @@ export async function canReachUrl(value) {
   }
 }
 
-export { DEFAULT_URL }
+export { DEFAULT_URL, BASE_URL }
